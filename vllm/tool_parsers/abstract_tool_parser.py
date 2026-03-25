@@ -53,15 +53,26 @@ class ToolParser:
         # whereas all tokenizers have .get_vocab()
         return self.model_tokenizer.get_vocab()
 
-    def adjust_request(self, request: ChatCompletionRequest) -> ChatCompletionRequest:
+    def adjust_request(
+        self,
+        request: ChatCompletionRequest | ResponsesRequest,
+    ) -> ChatCompletionRequest | ResponsesRequest:
+        request, _ = self.legacy_adjust_request(request)
+        return request
+
+    def legacy_adjust_request(
+        self,
+        request: ChatCompletionRequest | ResponsesRequest,
+    ) -> tuple[ChatCompletionRequest | ResponsesRequest, bool]:
         """
         Static method that used to adjust the request parameters.
         """
         if not request.tools:
-            return request
+            return request, False
         json_schema_from_tool = get_json_schema_from_tools(
             tool_choice=request.tool_choice, tools=request.tools
         )
+        has_constraint = json_schema_from_tool is not None
         # Set structured output params for tool calling
         if json_schema_from_tool is not None:
             if isinstance(request, ChatCompletionRequest):
@@ -81,7 +92,7 @@ class ToolParser:
                     strict=True,
                 )
 
-        return request
+        return request, has_constraint
 
     def extract_tool_calls(
         self, model_output: str, request: ChatCompletionRequest
