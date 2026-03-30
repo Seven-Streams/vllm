@@ -11,7 +11,7 @@ from openai.types.responses import (
     ResponseTextConfig,
 )
 
-from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest
+from vllm.entrypoints.openai.chat_completion.protocol import ChatCompletionRequest, ChatCompletionToolsParam
 from vllm.entrypoints.openai.engine.protocol import (
     DeltaMessage,
     ExtractedToolCallInformation,
@@ -57,10 +57,10 @@ class ToolParser:
         self,
         request: ChatCompletionRequest | ResponsesRequest,
     ) -> ChatCompletionRequest | ResponsesRequest:
-        request, _ = self.legacy_adjust_request(request)
+        request, _ = self._adjust_request(request)
         return request
 
-    def legacy_adjust_request(
+    def _adjust_request(
         self,
         request: ChatCompletionRequest | ResponsesRequest,
     ) -> tuple[ChatCompletionRequest | ResponsesRequest, bool]:
