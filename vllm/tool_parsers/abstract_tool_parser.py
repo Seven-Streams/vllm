@@ -70,6 +70,9 @@ class ToolParser:
         # structural tagging, we stop after Step 1.
         if not request.tools or not self.support_builtin_structural_tag():
             return request
+        
+        if request.tool_choice != "auto":
+            return request
 
         # Step 2: apply xgrammar's built-in tool calling support.
         structure_tag = self.get_xgrammar_builtin_structural_tag(request)
