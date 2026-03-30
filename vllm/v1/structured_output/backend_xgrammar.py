@@ -146,6 +146,7 @@ class XgrammarGrammar(StructuredOutputGrammar):
     _is_terminated: bool = field(default=False, repr=False, hash=False)
 
     def accept_tokens(self, request_id: str, tokens: list[int]) -> bool:
+        print(f"Accepting tokens: {tokens} for request: {request_id}")
         """Accepts a list of tokens and advances the FSM.
 
         Returns True if the FSM was advanced successfully.

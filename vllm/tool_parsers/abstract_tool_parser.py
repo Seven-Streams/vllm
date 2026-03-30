@@ -62,6 +62,7 @@ class ToolParser:
     ) -> ChatCompletionRequest | ResponsesRequest:
         # Step 1: use the legacy adjust_request method to set the structured output
         # params when tool constraints are derived from the tool schema.
+        print(f"Adjusting request: {request}")
         request, has_constraint = self._adjust_request(request)
         if has_constraint or (not isinstance(request, ChatCompletionRequest)):
             return request
@@ -75,10 +76,12 @@ class ToolParser:
             return request
 
         # Step 2: apply xgrammar's built-in tool calling support.
+        print(f"Applying xgrammar's built-in tool calling support for request: {request}")
         structure_tag = self.get_xgrammar_builtin_structural_tag(request)
         request.structured_outputs = StructuredOutputsParams(
             structural_tag=json.dumps(structure_tag.model_dump()),
         )
+        print(f"Request after applying xgrammar's built-in tool calling support: {request}")
         return request
 
     def get_xgrammar_builtin_structural_tag(
