@@ -5,6 +5,9 @@ import importlib
 import os
 from collections.abc import Callable, Sequence
 from functools import cached_property
+import json
+from typing import Any, Dict
+from xgrammar import StructuralTag
 
 from openai.types.responses import (
     ResponseFormatTextJSONSchemaConfig,
@@ -57,8 +60,33 @@ class ToolParser:
         self,
         request: ChatCompletionRequest | ResponsesRequest,
     ) -> ChatCompletionRequest | ResponsesRequest:
-        request, _ = self._adjust_request(request)
+        # Step 1: use the legacy adjust_request method to set the structured output
+        # params when tool constraints are derived from the tool schema.
+        request, has_constraint = self._adjust_request(request)
+        if has_constraint or (not isinstance(request, ChatCompletionRequest)):
+            return request
+
+        # If we have tools, but this parser doesn't support xgrammar's built-in
+        # structural tagging, we stop after Step 1.
+        if not request.tools or not self.support_builtin_structural_tag():
+            return request
+
+        # Step 2: apply xgrammar's built-in tool calling support.
+        structure_tag = self.get_xgrammar_builtin_structural_tag(request)
+        request.structured_outputs = StructuredOutputsParams(
+            structural_tag=json.dumps(structure_tag.model_dump()),
+        )
         return request
+
+    def get_xgrammar_builtin_structural_tag(
+        self, request: ChatCompletionRequest
+    ) -> StructuralTag:
+        raise NotImplementedError(
+            "ToolParser.get_xgrammar_builtin_structural_tag is not implemented"
+        )
+
+    def support_builtin_structural_tag(self) -> bool:
+        return False
 
     def _adjust_request(
         self,

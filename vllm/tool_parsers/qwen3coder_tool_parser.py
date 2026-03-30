@@ -13,14 +13,6 @@ from vllm.entrypoints.openai.chat_completion.protocol import (
     ChatCompletionToolsParam,
 )
 
-from vllm.sampling_params import (
-    StructuredOutputsParams,
-)
-
-from vllm.entrypoints.openai.responses.protocol import (
-    ResponsesRequest,
-)
-
 from vllm.entrypoints.openai.engine.protocol import (
     DeltaFunctionCall,
     DeltaMessage,
@@ -723,26 +715,18 @@ class Qwen3CoderToolParser(ToolParser):
         return None
     
     
-    def adjust_request(self, request: ChatCompletionRequest | ResponsesRequest) -> ChatCompletionRequest | ResponsesRequest:
-        
-        # Step 1. Use the legacy adjust_request method to set the structured output params.
-        request, has_constraint = self._adjust_request(request)
-        if has_constraint or (not isinstance(request, ChatCompletionRequest)):
-            return request
-        
-        # Step 2. If the request is a ChatCompletionRequest, we can apply xgrammar's built-in tool calling support.
+    def support_builtin_structural_tag(self) -> bool:
+        return True
+
+    def get_xgrammar_builtin_structural_tag(
+        self, request: ChatCompletionRequest
+    ) -> StructuralTag:
+        # Config for xgrammar's built-in structural tagging.
         dict_tools = [tool.model_dump() for tool in request.tools]
-        thinking_mode = (request.reasoning_effort == "none")
-        
-        structure_tag: Dict[str, Any] = get_builtin_structural_tag(
+        thinking_mode = request.reasoning_effort == "none"
+        return get_builtin_structural_tag(
             model="qwen_coder",
             reasoning=True,
             tools=dict_tools,
             force_empty_reasoning=not thinking_mode,
         )
-        
-        request.structured_outputs = StructuredOutputsParams(
-            structural_tag=json.dumps(structure_tag),
-        )
-        
-        return request
