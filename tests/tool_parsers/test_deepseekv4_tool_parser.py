@@ -10,6 +10,8 @@ import pytest
 from xgrammar import StructuralTag
 
 from vllm.entrypoints.openai.chat_completion.protocol import (
+    ChatCompletionNamedFunction,
+    ChatCompletionNamedToolChoiceParam,
     ChatCompletionRequest,
     ChatCompletionToolsParam,
 )
@@ -195,7 +197,9 @@ def test_get_vllm_registry_structural_tag_returns_structural_tag(
             messages=[],
             model="m",
             tools=sample_tools,
-            tool_choice={"type": "function", "function": {"name": tool.function.name}},
         )
-    tag = parser.get_structural_tag(req)
-    assert isinstance(tag, StructuralTag)
+        req.tool_choice = ChatCompletionNamedToolChoiceParam(
+            function=ChatCompletionNamedFunction(name=tool.function.name)
+        )
+        tag = parser.get_structural_tag(req)
+        assert isinstance(tag, StructuralTag)
