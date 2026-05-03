@@ -25,6 +25,7 @@ from vllm.entrypoints.openai.engine.protocol import (
 from vllm.entrypoints.openai.responses.protocol import (
     ResponsesRequest,
 )
+from vllm.envs import VLLM_ENFORCE_STRICT_TOOL_CALLING
 from vllm.logger import init_logger
 from vllm.sampling_params import (
     StructuredOutputsParams,
@@ -101,12 +102,21 @@ class ToolParser:
                 or isinstance(request.tool_choice, ChatCompletionNamedToolChoiceParam)
             )
             if need_tool_calling:
-                structure_tag = self.get_structural_tag(request)
-                if structure_tag is not None:
-                    request.structured_outputs = StructuredOutputsParams(
-                        structural_tag=json.dumps(structure_tag.model_dump()),
-                    )
-                    return request
+                # If VLLM_ENFORCE_STRICT_TOOL_CALLING is set, use the
+                # model structural tag to enforce strict tool calling.
+                if VLLM_ENFORCE_STRICT_TOOL_CALLING:
+                    structure_tag = self.get_structural_tag(request)
+                    if structure_tag is not None:
+                        if request.structured_outputs is None:
+                            request.structured_outputs = StructuredOutputsParams(
+                                structural_tag=json.dumps(structure_tag.model_dump()),
+                            )
+                        return request
+
+                request.structured_outputs.structural_tag = json.dumps(
+                    structure_tag.model_dump()
+                )
+                return request
 
         # Step 2: set structured output params when tool constraints are
         # derived from the tool schema.
@@ -138,8 +148,6 @@ class ToolParser:
                         strict=True,
                     )
                 )
-
-            return request
 
         return request
 
