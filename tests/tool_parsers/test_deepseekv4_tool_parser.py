@@ -199,7 +199,7 @@ def test_get_vllm_registry_structural_tag_returns_structural_tag(
             tools=sample_tools,
             tool_choice=ChatCompletionNamedToolChoiceParam(
                 function=ChatCompletionNamedFunction(name=tool.function.name)
-            ),
+            ).model_dump(),
         )
     tag = parser.get_structural_tag(req)
     assert isinstance(tag, StructuralTag)
