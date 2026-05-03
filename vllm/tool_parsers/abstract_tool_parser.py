@@ -103,9 +103,14 @@ class ToolParser:
             if need_tool_calling:
                 structure_tag = self.get_structural_tag(request)
                 if structure_tag is not None:
-                    request.structured_outputs = StructuredOutputsParams(
-                        structural_tag=json.dumps(structure_tag.model_dump()),
-                    )
+                    if request.structured_outputs is None:
+                        request.structured_outputs = StructuredOutputsParams(
+                            structural_tag=json.dumps(structure_tag.model_dump()),
+                        )
+                    else:
+                        request.structured_outputs.structural_tag = json.dumps(
+                            structure_tag.model_dump()
+                        )
                     return request
 
         # Step 2: set structured output params when tool constraints are
